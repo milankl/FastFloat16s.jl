@@ -1,13 +1,13 @@
 # FastFloat16s.jl - Software-emulated Float16, but fast.
 
-FastFloat16s.jl emulates Float16 similar to Julia's imbuilt type, but stores them as
+FastFloat16s.jl emulates Float16 similar to Julia's inbuilt type, but stores them as
 Float32 internally. Although 32-bit are therefore used for storing every FastFloat16
-number, avoiding the recalculation of the exponent bits makes them about 20-30x faster.
+number, avoiding the recalculation of the exponent bits makes them about 20–30x faster.
 Arithmetically, FastFloat16 is identical to Float16.
 
 For all numbers larger equal subnormal on every arithmetic operation the significant
 bits of Float32 are round to the nearest 10 significant bits. For Float16-subnormals
-the precision of 10 bits is reduced every power of 2 down by 1 bit -- to match the
+the precision of 10 bits is reduced every power of 2 down by 1 bit – to match the
 IEEE standard. As FastFloat16s are essentially Float32 but always round to the nearest
 Float16 in the subset of all Float32 no conversion of the exponent bits is needed
 which makes them much faster.
@@ -16,7 +16,7 @@ As with Float16, FastFloat16 underflow below minpos/2 and overflow above floatma
 
 ## Benchmarking
 
-`FastFloat16s.jl` is almost 20-30x faster than Julia's imbuilt `Float16` (but requires twice as much memory)
+`FastFloat16s.jl` is almost 20–30x faster than Julia's inbuilt `Float16` (but requires twice as much memory).
 
 ```julia
 using FastFloat16s.jl, BenchmarkTools

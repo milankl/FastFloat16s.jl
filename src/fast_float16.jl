@@ -2,19 +2,35 @@ import Base: Float64, Float32, Float16, Int
 
 primitive type FastFloat16 <: AbstractFloat 32 end
 
-# conversions
-Base.Float32(x::FastFloat16) = reinterpret(Float32,x)
-function FastFloat16(x::Float32)
-    # round to 10 significant bits
-    ui = reinterpret(UInt32,x)
-    ui += 0x0000_0fff + ((ui >> 13) & 0x0000_0001)
-    ui &= 0xffff_e000           # set bits 20-32 to 0
+# CONVERSIONS
+# helper functions to create correct shift & set/shavemasks
+shift(n::UInt32) = 13 + n                   # for subnormals n > 0 to decrease precision
+mask(n::UInt32) = 0x003f_ffff >> (0xa-n)    # same: mask more significant bits
 
-    # check for overflow/underflow
+# conversion FastFloat16 -> Float32 is just reinterpretation
+Base.Float32(x::FastFloat16) = reinterpret(Float32,x)
+
+# conversion Float32 -> via rounding & over/underflow cap
+function FastFloat16(x::Float32)
+    ui = reinterpret(UInt32,x)
     sign = ui & 0x8000_0000     # separate the sign bit
     ui = ui & 0x7fff_ffff       # from the exp&significant bits
-    ui = ui < 0x3380_0000 ? 0x0000_0000 : ui   # underflow? replace with 0
-    ui = ui > 0x477f_e000 ? 0x7f80_0000 : ui   # overflow? repalce with Inf32
+
+    # check for Float16-subnormals: subnormal sn = ui < 0x3880_0000
+    scale = 0x71 - (ui >> 23)           # 0 for sn, 1 for sn/2, 2 for sn/4 etc.
+    # for x>=subnormal mask&shift operators are constant, for subnormals the
+    # precision is decreased by 1 bit for every power 2
+    maskbits,shiftbits = scale < 0xb ?  # = subnormal? yes: get variable mask&shift, no: constant
+        (mask(scale), shift(scale)) : (0x0000_0fff, 13)
+
+    # round to nearest (retain 10 sigbits for >subnormal, less for subnormals)
+    ui += maskbits + ((ui >> shiftbits) & 0x0000_0001)  # take carry over into account
+    ui &= (~maskbits) << 1          # set the non-Float16 sigbits to 0
+
+    # check for overflow/underflow
+    # underflow = ui smaller than minpos/2 = Float32(nextfloat(Float16(0)))/2
+    ui = ui < 0x3300_0000 ? 0x0000_0000 : ui   # then replace with 0
+    ui = ui > 0x477f_e000 ? 0x7f80_0000 : ui   # overflow? replace with Inf32
 
     # recombine sign&exp&significant
     return reinterpret(FastFloat16,sign | ui)

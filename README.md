@@ -1,5 +1,7 @@
 # FastFloat16s.jl - Software-emulated Float16, but fast.
 
+NOTE: THIS PACKAGE IS DEPRECATED FOR JULIA >=1.6 AS THE SUPPORT OF LLVM'S HALF FOR JULIA'S FLOAT16 IS SIMILARLY FAST.
+
 FastFloat16s.jl emulates Float16 similar to Julia's inbuilt type, but stores them as
 Float32 internally. Although 32-bit are therefore used for storing every FastFloat16
 number, avoiding the recalculation of the exponent bits makes them about 20–30x faster.
